@@ -82,7 +82,7 @@ Usage
 Copyright and license
 ---------------------
 
-Copyright (c) 2014 Ikuo KAWAHARADA All Rights Reserved.
+Copyright (c) 2014 Ikuo Kawaharada All Rights Reserved.
 
 This software is released under the MIT License.
 See LICENSE.txt
