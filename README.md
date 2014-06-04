@@ -6,8 +6,10 @@ Golang implementation of the Double-Array trie.
 Usage
 -----
 
-Sample: Build a trie form the keyword list.
+###Sample: Build a trie form the keyword list.
 
+####Code
+```
  import (
         "github.com/ikawaha/trie"
  
@@ -30,24 +32,27 @@ Sample: Build a trie form the keyword list.
       fmt.Println(t.Search("goodby"))
       fmt.Println(t.CommonPrefixSearch("関西国際空港"))
  }
+```
 
-Result
-
+####Result
+```
  true
  true
  false
  [関西 関西国際空港]
+```
 
-Sample: Build a trie from the file.
+###Sample: Build a trie from the file.
 
-input file (keyword_list.txt)
-
+#### Input file (keyword_list.txt)
+```
  奈良
  奈良先端
  奈良先端科学技術大学
  奈良奈良先端科学技術大学院大学
-
-
+```
+#### Code
+```
  import (
         "github.com/ikawaha/trie"
  
@@ -67,11 +72,12 @@ input file (keyword_list.txt)
       }
       fmt.Println(t.CommonPrefixSearch("奈良先端科学技術大学院大学"))
  }
+```
 
-Result
-
+####Result
+```
  [奈良 奈良先端 奈良先端科学技術大学]
-
+```
 
 Copyright and license
 ---------------------
