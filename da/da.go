@@ -23,7 +23,7 @@ func NewDoubleArray() *doubleArray {
 func (this *doubleArray) Append(a_keyword string) {
 	str := []byte(a_keyword + _TERMINATOR)
 	p, q, i := this.search(str)
-	if q >= len(*this) {
+	for q >= len(*this) {
 		this.expand()
 	}
 	if (*this)[q].check == p && (*this)[q].base == 0 {
@@ -95,7 +95,7 @@ func (this *doubleArray) shrink() {
 	var dst *doubleArray = new(doubleArray)
 	*dst = make(doubleArray, src_size)
 	copy(*dst, (*this)[:src_size])
-	this = dst
+	*this = *dst
 }
 
 func (this *doubleArray) expand() {
@@ -106,7 +106,7 @@ func (this *doubleArray) expand() {
 	for i, size := src_size, len(*dst); i < size; i++ {
 		(*dst)[i].check = -1
 	}
-	this = dst
+	*this = *dst
 }
 
 func (this *doubleArray) search(a_str []byte) (p, q, i int) {
@@ -141,17 +141,17 @@ func (this *doubleArray) seek(a_p, a_ch int, a_stack map[int]struct{ base, check
 		}
 	}
 
-	if q >= len(*this) {
+	for q >= len(*this) {
 		this.expand()
 	}
 	base := q - a_ch
 	table := make(map[int]int)
 	for old_p, tuple := range a_stack {
-		if base+tuple.ch >= len(*this) {
+		for base+tuple.ch >= len(*this) {
 			this.expand()
 		}
 		neo_p := base + tuple.ch
-		if neo_p >= len(*this) {
+		for neo_p >= len(*this) {
 			this.expand()
 		}
 		(*this)[neo_p] = struct{ base, check int }{tuple.base, tuple.check}
