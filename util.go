@@ -10,14 +10,14 @@ import (
 )
 
 func NewDoubleArrayTrie(a_src interface{}) (Trie, error) {
-	 switch a_src.(type) {
-	 case []string:
-	 	  return newDoubleArrayTrieKeywords(a_src.([]string)), nil
-     case *os.File:
-          return newDoubleArrayTrieFile(a_src.(*os.File))
-     default:
-          return da.NewDoubleArray(), errors.New("cannot open unknown type src, '[]string' or '*os.File' can be specified.")
-     }
+	switch a_src.(type) {
+	case []string:
+		return newDoubleArrayTrieKeywords(a_src.([]string)), nil
+	case *os.File:
+		return newDoubleArrayTrieFile(a_src.(*os.File))
+	default:
+		return da.NewDoubleArray(), errors.New("cannot open unknown type src, '[]string' or '*os.File' can be specified.")
+	}
 }
 
 func newDoubleArrayTrieKeywords(a_keywords []string) Trie {
