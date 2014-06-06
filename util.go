@@ -23,8 +23,8 @@ func NewDoubleArrayTrie(a_src interface{}) (Trie, error) {
 func newDoubleArrayTrieKeywords(a_keywords []string) Trie {
 	sort.Strings(a_keywords)
 	da := da.NewDoubleArray()
-	for _, keyword := range a_keywords {
-		da.Append(keyword)
+	for key, keyword := range a_keywords {
+		da.Add(keyword, key+1)
 	}
 	return da
 }
@@ -32,8 +32,10 @@ func newDoubleArrayTrieKeywords(a_keywords []string) Trie {
 func newDoubleArrayTrieFile(a_file *os.File) (Trie, error) {
 	da := da.NewDoubleArray()
 	scanner := bufio.NewScanner(a_file)
+	id := 1
 	for scanner.Scan() {
-		da.Append(scanner.Text())
+		da.Add(scanner.Text(), id)
+		id++
 	}
 	return da, scanner.Err()
 }

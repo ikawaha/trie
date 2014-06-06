@@ -20,13 +20,13 @@ func NewDoubleArray() *doubleArray {
 	return da
 }
 
-func (this *doubleArray) Append(a_keyword string) {
+func (this *doubleArray) Add(a_keyword string, a_id int) {
 	str := []byte(a_keyword + _TERMINATOR)
 	p, q, i := this.search(str)
 	for q >= len(*this) {
 		this.expand()
 	}
-	if (*this)[q].check == p && (*this)[q].base == 0 {
+	if (*this)[q].check == p && (*this)[q].base < 0 {
 		return
 	}
 	if (*this)[q].check < 0 {
@@ -34,36 +34,38 @@ func (this *doubleArray) Append(a_keyword string) {
 	} else {
 		q = this.rearrange(p, q, i, str)
 	}
-	this.append(q, i+1, str)
+	this.add(q, i+1, str, a_id)
 }
 
-func (this *doubleArray) Search(a_keyword string) bool {
+func (this *doubleArray) Search(a_keyword string) (id int, ok bool) {
 	p, q, _ := this.search([]byte(a_keyword + _TERMINATOR))
-	if (*this)[q].check != p || (*this)[q].base != 0 {
-		return false
+	if (*this)[q].check != p || (*this)[q].base > 0 {
+		return 0, false
 	}
-	return true
+	return -(*this)[q].base, true
 }
 
-func (this *doubleArray) CommonPrefixSearch(a_keyword string) []string {
+func (this *doubleArray) CommonPrefixSearch(a_keyword string) (keywords []string, ids []int) {
 	mbstr := []rune(a_keyword)
-	ret := make([]string, 0)
+	keywords, ids = make([]string, 0), make([]int, 0)
 	for i, size := 0, len(mbstr); i < size; i++ {
-		if prefix := string(mbstr[0 : i+1]); this.Search(prefix) {
-			ret = append(ret, prefix)
+		prefix := string(mbstr[0 : i+1])
+		if id, ok := this.Search(prefix); ok {
+			keywords, ids = append(keywords, prefix), append(ids, id)
 		}
 	}
-	return ret
+	return
 }
 
-func (this *doubleArray) PrefixSearch(a_keyword string) (prefix string, ok bool) {
+func (this *doubleArray) PrefixSearch(a_keyword string) (keyword string, id int, ok bool) {
 	mbstr := []rune(a_keyword)
 	for i, size := 0, len(mbstr); i < size; i++ {
-		if prefix := string(mbstr[0 : size-i]); this.Search(prefix) {
-			return prefix, true
+		prefix := string(mbstr[0 : size-i])
+		if id, ok := this.Search(prefix); ok {
+			return prefix, id, true
 		}
 	}
-	return "", false
+	return "", 0, false
 }
 
 func (this *doubleArray) Size() int {
@@ -167,7 +169,7 @@ func (this *doubleArray) seek(a_p, a_ch int, a_stack map[int]struct{ base, check
 	return q
 }
 
-func (this *doubleArray) append(a_p, a_i int, a_str []byte) {
+func (this *doubleArray) add(a_p, a_i int, a_str []byte, a_id int) {
 	p := a_p
 	for i, size := a_i, len(a_str); i < size; i++ {
 		ch := int(a_str[i])
@@ -176,6 +178,7 @@ func (this *doubleArray) append(a_p, a_i int, a_str []byte) {
 		(*this)[q].check = p
 		p = q
 	}
+	(*this)[p].base = -a_id
 }
 
 func (this *doubleArray) rearrange(a_p, a_q, a_i int, a_str []byte) int {
