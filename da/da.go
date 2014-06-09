@@ -1,8 +1,9 @@
 package da
 
 const (
-	_BUFSIZE    = 1024
-	_TERMINATOR = '\x00'
+	_BUFSIZE      = 1024
+	_EXPAND_RATIO = 2
+	_TERMINATOR   = '\x00'
 )
 
 type doubleArray []struct {
@@ -122,7 +123,7 @@ func (this *doubleArray) shrink() {
 func (this *doubleArray) expand() {
 	src_size := len(*this)
 	var dst *doubleArray = new(doubleArray)
-	*dst = make(doubleArray, src_size+_BUFSIZE)
+	*dst = make(doubleArray, src_size*_EXPAND_RATIO)
 	copy(*dst, *this)
 	for i, size := src_size, len(*dst); i < size; i++ {
 		(*dst)[i].check = -1
