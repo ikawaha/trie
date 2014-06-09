@@ -2,7 +2,7 @@ package da
 
 const (
 	_BUFSIZE    = 1024
-	_TERMINATOR = "\x00"
+	_TERMINATOR = '\x00'
 )
 
 type doubleArray []struct {
@@ -21,7 +21,7 @@ func NewDoubleArray() *doubleArray {
 }
 
 func (this *doubleArray) Add(a_keyword string, a_id int) {
-	str := []byte(a_keyword + _TERMINATOR)
+	str := []byte(a_keyword + string(_TERMINATOR))
 	p, q, i := this.search(str)
 	for q >= len(*this) {
 		this.expand()
@@ -38,7 +38,7 @@ func (this *doubleArray) Add(a_keyword string, a_id int) {
 }
 
 func (this *doubleArray) Search(a_keyword string) (id int, ok bool) {
-	p, q, _ := this.search([]byte(a_keyword + _TERMINATOR))
+	p, q, _ := this.search([]byte(a_keyword + string(_TERMINATOR)))
 	if (*this)[q].check != p || (*this)[q].base > 0 {
 		return 0, false
 	}
@@ -46,26 +46,45 @@ func (this *doubleArray) Search(a_keyword string) (id int, ok bool) {
 }
 
 func (this *doubleArray) CommonPrefixSearch(a_keyword string) (keywords []string, ids []int) {
-	mbstr := []rune(a_keyword)
 	keywords, ids = make([]string, 0), make([]int, 0)
-	for i, size := 0, len(mbstr); i < size; i++ {
-		prefix := string(mbstr[0 : i+1])
-		if id, ok := this.Search(prefix); ok {
-			keywords, ids = append(keywords, prefix), append(ids, id)
+	p, q, i := 0, 0, 0
+	str := []byte(a_keyword)
+	buf_size := len(*this)
+	for size := len(str); i < size; i++ {
+		p = q
+		ch := int(str[i])
+		q = (*this)[p].base + ch
+		if q >= buf_size || (*this)[q].check != p {
+			break
+		}
+		ahead := (*this)[q].base + _TERMINATOR
+		if ahead < buf_size && (*this)[ahead].check == q && (*this)[ahead].base < 0 {
+			keywords = append(keywords, string(str[0:i+1]))
+			ids = append(ids, -(*this)[ahead].base)
 		}
 	}
 	return
 }
 
 func (this *doubleArray) PrefixSearch(a_keyword string) (keyword string, id int, ok bool) {
-	mbstr := []rune(a_keyword)
-	for i, size := 0, len(mbstr); i < size; i++ {
-		prefix := string(mbstr[0 : size-i])
-		if id, ok := this.Search(prefix); ok {
-			return prefix, id, true
+	p, q, i := 0, 0, 0
+	str := []byte(a_keyword)
+	buf_size := len(*this)
+	for size := len(str); i < size; i++ {
+		p = q
+		ch := int(str[i])
+		q = (*this)[p].base + ch
+		if q >= buf_size || (*this)[q].check != p {
+			break
+		}
+		ahead := (*this)[q].base + _TERMINATOR
+		if ahead < buf_size && (*this)[ahead].check == q && (*this)[ahead].base < 0 {
+			keyword = string(str[0 : i+1])
+			id = -(*this)[ahead].base
+			ok = true
 		}
 	}
-	return "", 0, false
+	return
 }
 
 func (this *doubleArray) Size() int {
