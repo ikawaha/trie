@@ -40,10 +40,10 @@ import (
 
 ####Result
 ```
-true
-true
-false
-[関西 関西国際空港]
+0 true
+1 true
+0 false
+[関西 関西国際空港] [4 5]
 ```
 
 ###Sample: Build a trie from the file.
