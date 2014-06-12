@@ -50,10 +50,13 @@ false
 
 #### Input file (keyword_list.txt)
 ```
-奈良
-奈良先端
-奈良先端科学技術大学
-奈良奈良先端科学技術大学院大学
+逓信大
+電気通信大学
+東京電気大学
+電通大
+電気通信大学大学院
+電気通信大学大学院大学
+情報工学科
 ```
 #### Code
 ```
@@ -72,17 +75,17 @@ import (
          panic(err)
       }
       defer file.Close()
-      t, err = trie.NewDoubleArrayTrie(file)
+      t, err := trie.NewDoubleArrayTrie(file)
       if err != nil {
           panic(err)
       }
-      fmt.Println(t.CommonPrefixSearch("奈良先端科学技術大学院大学"))
+      fmt.Println(t.CommonPrefixSearch("電気通信大学大学院大学"))
 }
 ```
 
 ####Result
 ```
-[奈良 奈良先端 奈良先端科学技術大学]
+[電気通信大学 電気通信大学大学院] [3 4]
 ```
 
 Copyright and license
