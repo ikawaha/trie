@@ -1,44 +1,40 @@
 package da
 
-const (
-	_BUFSIZE      = 1024
-	_EXPAND_RATIO = 2
-	_TERMINATOR   = '\x00'
+import (
+	"sort"
 )
 
-type doubleArray []struct {
+const (
+	_BUFSIZE     = 51200
+	_EXPANDRATIO = 2
+	_TERMINATOR  = '\x00'
+	_ROOTID      = 0
+)
+
+type DoubleArray []struct {
 	base, check int
 }
 
-func NewDoubleArray() *doubleArray {
-	var da *doubleArray = new(doubleArray)
-	*da = make(doubleArray, _BUFSIZE)
-	(*da)[0].base = 1
-	(*da)[0].check = -1
-	for i, len := 0, len(*da); i < len; i++ {
-		(*da)[i].check = -1
+func NewDoubleArray() *DoubleArray {
+	da := new(DoubleArray)
+	*da = make(DoubleArray, _BUFSIZE)
+
+	(*da)[_ROOTID].base = 1
+	(*da)[_ROOTID].check = -1
+
+	size := len(*da)
+	for i := 1; i < size; i++ {
+		(*da)[i].base = -(i - 1)
+		(*da)[i].check = -(i + 1)
 	}
+
+	(*da)[1].base = -(size - 1)
+	(*da)[size-1].check = -1
+
 	return da
 }
 
-func (this *doubleArray) Add(a_keyword string, a_id int) {
-	str := []byte(a_keyword + string(_TERMINATOR))
-	p, q, i := this.search(str)
-	for q >= len(*this) {
-		this.expand()
-	}
-	if (*this)[q].check == p && (*this)[q].base < 0 {
-		return
-	}
-	if (*this)[q].check < 0 {
-		(*this)[q].check = p
-	} else {
-		q = this.rearrange(p, q, i, str)
-	}
-	this.add(q, i+1, str, a_id)
-}
-
-func (this *doubleArray) Search(a_keyword string) (id int, ok bool) {
+func (this *DoubleArray) Search(a_keyword string) (id int, ok bool) {
 	p, q, _ := this.search([]byte(a_keyword + string(_TERMINATOR)))
 	if (*this)[q].check != p || (*this)[q].base > 0 {
 		return 0, false
@@ -46,7 +42,7 @@ func (this *doubleArray) Search(a_keyword string) (id int, ok bool) {
 	return -(*this)[q].base, true
 }
 
-func (this *doubleArray) CommonPrefixSearch(a_keyword string) (keywords []string, ids []int) {
+func (this *DoubleArray) CommonPrefixSearch(a_keyword string) (keywords []string, ids []int) {
 	keywords, ids = make([]string, 0), make([]int, 0)
 	p, q, i := 0, 0, 0
 	str := []byte(a_keyword)
@@ -67,7 +63,7 @@ func (this *doubleArray) CommonPrefixSearch(a_keyword string) (keywords []string
 	return
 }
 
-func (this *doubleArray) PrefixSearch(a_keyword string) (keyword string, id int, ok bool) {
+func (this *DoubleArray) PrefixSearch(a_keyword string) (keyword string, id int, ok bool) {
 	p, q, i := 0, 0, 0
 	str := []byte(a_keyword)
 	buf_size := len(*this)
@@ -88,131 +84,149 @@ func (this *doubleArray) PrefixSearch(a_keyword string) (keyword string, id int,
 	return
 }
 
-func (this *doubleArray) Size() int {
-	return len(*this)
-}
-
-func (this *doubleArray) Efficiency() (int, int, float64) {
-	unspent := 0
-	for _, pair := range *this {
-		if pair.check < 0 {
-			unspent++
-		}
-	}
-	return unspent, len(*this), float64(len(*this)-unspent) / float64(len(*this)) * 100
-}
-
-func (this *doubleArray) shrink() {
-	src_size := len(*this)
-	for i, size := 0, src_size; i < size; i++ {
-		if (*this)[size-i-1].check < 0 {
-			src_size--
-		} else {
-			break
-		}
-	}
-	if src_size == len(*this) {
-		return
-	}
-	var dst *doubleArray = new(doubleArray)
-	*dst = make(doubleArray, src_size)
-	copy(*dst, (*this)[:src_size])
-	*this = *dst
-}
-
-func (this *doubleArray) expand() {
-	src_size := len(*this)
-	var dst *doubleArray = new(doubleArray)
-	*dst = make(doubleArray, src_size*_EXPAND_RATIO)
+func (this *DoubleArray) expand() {
+	srcSize := len(*this)
+	dst := new(DoubleArray)
+	dstSize := srcSize * _EXPANDRATIO
+	*dst = make(DoubleArray, dstSize)
 	copy(*dst, *this)
-	for i, size := src_size, len(*dst); i < size; i++ {
-		(*dst)[i].check = -1
+
+	for i := srcSize; i < dstSize; i++ {
+		(*dst)[i].base = -(i - 1)
+		(*dst)[i].check = -(i + 1)
 	}
+
+	start := -(*this)[0].check
+	end := -(*dst)[start].base
+	(*dst)[srcSize].base = -end
+	(*dst)[start].base = -(dstSize - 1)
+	(*dst)[end].check = -srcSize
+	(*dst)[dstSize-1].check = -start
+
 	*this = *dst
 }
 
-func (this *doubleArray) search(a_str []byte) (p, q, i int) {
+func (this *DoubleArray) search(a_str []byte) (p, q, i int) {
 	p, q, i = 0, 0, 0
-	buf_size := len(*this)
+	bufSize := len(*this)
 	for size := len(a_str); i < size; i++ {
 		p = q
 		ch := int(a_str[i])
 		q = (*this)[p].base + ch
-		if q >= buf_size || (*this)[q].check != p {
+		if q >= bufSize || (*this)[q].check != p {
 			return p, q, i
 		}
 	}
 	return p, q, i
 }
 
-func (this *doubleArray) seek(a_p, a_ch int, a_stack map[int]struct{ base, check, ch int }) (q int) {
-	q = len(*this)
-	for i, size := 1, len(*this); i < size; i++ {
-	L_start:
-		s := a_ch + i
-		if s >= size || (*this)[s].check < 0 {
-			base := s - a_ch
-			for _, tuple := range a_stack {
-				if base+tuple.ch < size && (*this)[base+tuple.ch].check >= 0 {
-					i++
-					goto L_start
-				}
-			}
-			q = s
-			break
-		}
+func (this *DoubleArray) Build(a_keywords []string) {
+	list := a_keywords
+	if len(list) == 0 {
+		return
 	}
+	if !sort.StringsAreSorted(list) {
+		sort.Strings(list)
+	}
+	branches := make([]int, len(a_keywords))
+	for i, size := 0, len(a_keywords); i < size; i++ {
+		branches[i] = i
+	}
+	this.append(0, 0, branches, a_keywords)
+}
 
-	for q >= len(*this) {
+func (this *DoubleArray) setBase(a_p, a_base int) {
+	if a_p == _ROOTID {
+		return
+	}
+	if (*this)[a_p].check < 0 {
+		if (*this)[a_p].base == (*this)[a_p].check {
+			this.expand()
+		}
+		prev := -(*this)[a_p].base
+		next := -(*this)[a_p].check
+		if -a_p == (*this)[_ROOTID].check {
+			(*this)[_ROOTID].check = (*this)[a_p].check
+		}
+		(*this)[next].base = (*this)[a_p].base
+		(*this)[prev].check = (*this)[a_p].check
+	}
+	(*this)[a_p].base = a_base
+}
+
+func (this *DoubleArray) setCheck(a_p, a_check int) {
+	if (*this)[a_p].base == (*this)[a_p].check {
 		this.expand()
 	}
-	base := q - a_ch
-	table := make(map[int]int)
-	for old_p, tuple := range a_stack {
-		for base+tuple.ch >= len(*this) {
-			this.expand()
-		}
-		neo_p := base + tuple.ch
-		for neo_p >= len(*this) {
-			this.expand()
-		}
-		(*this)[neo_p] = struct{ base, check int }{tuple.base, tuple.check}
-		table[old_p] = neo_p
+	prev := -(*this)[a_p].base
+	next := -(*this)[a_p].check
+	if -a_p == (*this)[_ROOTID].check {
+		(*this)[_ROOTID].check = (*this)[a_p].check
 	}
-	if len(table) > 0 {
-		for index, bc := range *this {
-			if neo_p, ok := table[bc.check]; ok {
-				(*this)[index].check = neo_p
+
+	(*this)[next].base = (*this)[a_p].base
+	(*this)[prev].check = (*this)[a_p].check
+	(*this)[a_p].check = a_check
+
+}
+
+func (this *DoubleArray) seekAndMark(a_p int, a_chars []byte) { // chars != nil
+	free := _ROOTID
+	rep := int(a_chars[0])
+	var base int
+	for {
+	L_start:
+		if free != _ROOTID && (*this)[free].check == (*this)[_ROOTID].check {
+			this.expand()
+		}
+		free = -(*this)[free].check
+		base = free - rep
+		if base <= 0 {
+			continue
+		}
+		for _, ch := range a_chars {
+			q := base + int(ch)
+			if q < len(*this) && (*this)[q].check >= 0 {
+				goto L_start
 			}
 		}
+		break
 	}
-	return q
+	this.setBase(a_p, base)
+	for _, ch := range a_chars {
+		q := (*this)[a_p].base + int(ch)
+		if q >= len(*this) {
+			this.expand()
+		}
+		this.setCheck(q, a_p)
+	}
 }
 
-func (this *doubleArray) add(a_p, a_i int, a_str []byte, a_id int) {
-	p := a_p
-	for i, size := a_i, len(a_str); i < size; i++ {
-		ch := int(a_str[i])
-		q := this.seek(p, ch, nil)
-		(*this)[p].base = q - ch
-		(*this)[q].check = p
-		p = q
-	}
-	(*this)[p].base = -a_id
-}
-
-func (this *doubleArray) rearrange(a_p, a_q, a_i int, a_str []byte) int {
-	stack := make(map[int]struct{ base, check, ch int })
-	for i, size := 0, len(*this); i < size; i++ {
-		if (*this)[i].check == a_p {
-			ch := i - (*this)[a_p].base
-			stack[i] = struct{ base, check, ch int }{(*this)[i].base, (*this)[i].check, ch}
-			(*this)[i].base, (*this)[i].check = 0, -1
+func (this *DoubleArray) append(a_p, a_i int, a_branches []int, a_keywords []string) {
+	chars := make([]byte, 0)
+	subtree := make(map[byte][]int)
+	for _, keyId := range a_branches {
+		str := []byte(a_keywords[keyId])
+		var ch byte
+		if a_i >= len(str) {
+			ch = _TERMINATOR
+		} else {
+			ch = str[a_i]
+		}
+		if size := len(chars); size == 0 || chars[len(chars)-1] != ch {
+			chars = append(chars, ch)
+		}
+		if ch != _TERMINATOR {
+			subtree[ch] = append(subtree[ch], keyId)
 		}
 	}
-	ch := int(a_str[a_i])
-	q := this.seek(a_p, ch, stack)
-	(*this)[a_p].base = q - ch
-	(*this)[q].check = a_p
-	return q
+	this.seekAndMark(a_p, chars)
+	for _, ch := range chars {
+		q := (*this)[a_p].base + int(ch)
+		if len(subtree[ch]) == 0 {
+			(*this)[q].base = -a_branches[0]
+		} else {
+			this.append(q, a_i+1, subtree[ch], a_keywords)
+		}
+	}
 }

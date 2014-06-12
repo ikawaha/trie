@@ -1,7 +1,7 @@
 package trie
 
 import (
-	"github.com/ikawaha/trie/da"
+	"github.com/ikawaha/tokenizer/trie/da"
 
 	"bufio"
 	"errors"
@@ -23,19 +23,17 @@ func NewDoubleArrayTrie(a_src interface{}) (Trie, error) {
 func newDoubleArrayTrieKeywords(a_keywords []string) Trie {
 	sort.Strings(a_keywords)
 	da := da.NewDoubleArray()
-	for key, keyword := range a_keywords {
-		da.Add(keyword, key+1)
-	}
+	da.Build(a_keywords)
 	return da
 }
 
 func newDoubleArrayTrieFile(a_file *os.File) (Trie, error) {
 	da := da.NewDoubleArray()
 	scanner := bufio.NewScanner(a_file)
-	id := 1
+	keywords := make([]string, 0, 51200)
 	for scanner.Scan() {
-		da.Add(scanner.Text(), id)
-		id++
+		keywords = append(keywords, scanner.Text())
 	}
+	da.Build(keywords)
 	return da, scanner.Err()
 }
