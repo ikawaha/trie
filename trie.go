@@ -1,7 +1,7 @@
 package trie
 
 type Trie interface {
-	Search(string) bool
-	PrefixSearch(string) (string, bool)
-	CommonPrefixSearch(string) []string
+	Search(string) (id int, ok bool)
+	PrefixSearch(string) (keyword string, id int, ok bool)
+	CommonPrefixSearch(string) (keywords []string, ids []int)
 }
